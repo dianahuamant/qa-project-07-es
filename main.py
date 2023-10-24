@@ -4,10 +4,12 @@ from selenium import webdriver
 from selenium.webdriver import Keys
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import StaleElementReferenceException
-import requests
 from selenium.webdriver.support import expected_conditions
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
+from phone_code_util import retrieve_phone_code
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+from selenium.webdriver.chrome.service import Service
 
 class UrbanRoutesPage:
     def __init__(self, driver):
@@ -21,7 +23,7 @@ class UrbanRoutesPage:
         self.phone=(By.ID, 'phone')
         self.next = (By.CSS_SELECTOR,'.button.full')
         self.code = (By.ID, 'code')
-        self.confirm = (By.XPATH, data.xpath_button_confirm)
+        self.button_confirm_code= (By.XPATH,data.xpath_button_confirm)
         self.click_payment=(By.CSS_SELECTOR,'.pp-text')
         self.click_add_card=(By.CSS_SELECTOR,'.pp-row.disabled')
         self.number_card = (By.ID, 'number')
@@ -30,20 +32,26 @@ class UrbanRoutesPage:
         self.close_window = (By.XPATH, data.xpath_close)
         self.comment=(By.ID,"comment")
         self.manta=(By.XPATH,data.xpath_manta)
+        self.selected_slider = (By.CSS_SELECTOR, '.switch-input:checked+.slider')
         self.ice_cream=(By.XPATH,data.xpath_helado)
+        self.counter_ice_cream=(By.CSS_SELECTOR, '.counter-value')
         self.button_order = (By.CSS_SELECTOR, '.smart-button-main, .smart-button-secondary')
 
+#Ingresa el dato de from
     def set_from(self, from_address):
         self.driver.find_element(*self.from_field).send_keys(from_address)
 
+# Ingresa el dato de to
     def set_to(self, to_address):
         self.driver.find_element(*self.to_field).send_keys(to_address)
 
+#Value de from
     def get_from(self):
-        return self.driver.find_element(*self.from_field).get_property('value')
+            return self.driver.find_element(*self.from_field).get_property('value')
 
+#Value de to
     def get_to(self):
-        return self.driver.find_element(*self.to_field).get_property('value')
+            return self.driver.find_element(*self.to_field).get_property('value')
 
 #Seleccionando la opción "Personal"
     def click_personal(self):
@@ -56,6 +64,10 @@ class UrbanRoutesPage:
 #Click en la opción de comfort
     def click_comfort(self):
         self.driver.find_element(*self.comfort).click()
+
+#Comfort es seleccionado
+    def is_comfort_rate_selected(self):
+            return self.driver.find_element(*self.comfort).get_attribute("class")
 
 #Click para abrir el cuadro donde se introduce el teléfono
     def click_telephone(self):
@@ -74,10 +86,10 @@ class UrbanRoutesPage:
         self.driver.find_element(*self.code).send_keys(code)
 
 #Click en el botón para Confirmar el código
-        def click_confirm_code(self):
-            wait = WebDriverWait(self.driver, 10)
-            confirm_button = wait.until(EC.element_to_be_clickable(self.confirm))
-            confirm_button.click()
+    def click_confirmation_code(self):
+        wait = WebDriverWait(self.driver, 3)
+        wait.until(expected_conditions.element_to_be_clickable((By.XPATH, data.xpath_button_confirm)))
+        self.driver.find_element(*self.button_confirm_code).click()
 
 #Click para payment
     def click_button_payment(self):
@@ -116,80 +128,27 @@ class UrbanRoutesPage:
     def set_comment(self):
         self.driver.find_element(*self.comment).send_keys(data.message_for_driver)
 
+#Value de comment
+    def get_comment(self):
+            return self.driver.find_element(*self.comment).get_property('value')
+
 #Click para manta y pañuelos
     def click_on_manta(self):
         self.driver.find_element(*self.manta).click()
+
+#Color de boton de manta y pañuelos
+    def get_manta_panuelos(self):
+            return self.driver.find_element(*self.selected_slider).value_of_css_property("background-color")
 
 #Añadiendo dos helados
     def adding_2_ice_cream(self):
         self.driver.find_element(*self.ice_cream).click()
         self.driver.find_element(*self.ice_cream).click()
 
+#Texto para saber cuántos helados está contando
+    def get_ice_creams(self):
+            return self.driver.find_element(*self.counter_ice_cream).text
+
 #Botón final para ordenar
     def click_on_order_button(self):
         self.driver.find_element(*self.button_order).click()
-
-class TestPageUrban:
-    driver = None
-
-    @classmethod
-    def setup_class(cls):
-        # Crea un controlador para Chrome
-        cls.driver = webdriver.Chrome()
-        # Abre la página urban routes
-        cls.driver.get(data.urban_routes_url)
-        cls.driver.implicitly_wait(10)
-        # Crea un objeto de página
-        cls.urban_page = UrbanRoutesPage(cls.driver)
-
-    def test_valid_data(self):
-        driver = self.driver
-        actions = UrbanRoutesPage(driver)
-        actions.set_from(data.address_from)
-        actions.set_to(data.address_to)
-        actions.click_personal()
-        actions.click_button_taxi()
-        actions.click_comfort()
-        actions.click_telephone()
-        actions.set_phone(data.phone_number)
-        actions.click_next()
-
-        # Agregar una espera para que se realice la solicitud HTTP
-        sleep(3)
-
-        #Enviar una solicitud GET para obtener el código de confirmación
-        response = requests.get(data.urban_routes_url_code)
-        if response.status_code == 200:
-            response_data = response.json()
-            confirmation_code = response_data.get('code')
-            if confirmation_code:
-                print(f"El código de confirmación es: {confirmation_code}")
-            else:
-                print("No se pudo obtener el código de confirmación.")
-        else:
-            print(f"Error al hacer la solicitud HTTP: {response.status_code}")
-
-        actions.set_confirmation_code(confirmation_code)
-        actions.click_confirm_code()
-        actions.click_button_payment()
-        actions.click_to_add_card()
-        actions.set_card_number(data.card_number)
-        actions.set_card_code(data.card_code)
-        actions.click_on_link()
-        actions.click_on_close()
-        actions.set_comment()
-        actions.click_on_manta()
-        actions.adding_2_ice_cream()
-        actions.click_on_order_button()
-
-    @classmethod
-    def teardown_class(cls):
-        # Cerrar el navegador
-        sleep(7)
-        cls.driver.quit()
-
-
-first_test = TestPageUrban()
-first_test.setup_class()
-first_test.test_valid_data()
-first_test.teardown_class()
