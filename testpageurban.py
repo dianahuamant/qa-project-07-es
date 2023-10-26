@@ -63,7 +63,7 @@ class TestPageUrban:
 
     # Validando que sí se ingresó el número telefónico
     def test_confirm_number_telephone(self):
-        number_telephone = self.driver.find_element(By.CSS_SELECTOR, '.np-text').text
+        number_telephone = self.driver.find_element(By.CSS_SELECTOR, data.css_number_telephone).text
         assert number_telephone == data.phone_number, "El número telefónico no se ha agregó correctamente"
 
     #Agregando tarjeta de crédito
@@ -75,8 +75,8 @@ class TestPageUrban:
         actions.set_card_code(data.card_code)
         actions.click_on_link()
         actions.click_on_close()
-        credit_card_text = self.driver.find_element(By.CSS_SELECTOR, '.pp-value-text').text
-        assert credit_card_text == "Card", "La tarjeta de crédito no se ha agregado correctamente"
+        credit_card_text = self.driver.find_element(By.CSS_SELECTOR, data.css_credit_card_text).text
+        assert credit_card_text == "Tarjeta", "La tarjeta de crédito no se ha agregado correctamente"
 
     #Validando que se escribió un mensaje para el controlador
     def test_write_comment(self):
@@ -93,10 +93,7 @@ class TestPageUrban:
         actions.get_manta_panuelos()
         background_color = actions.get_manta_panuelos()
         # Verificar si el color de fondo es igual a #007eff usando una aserción
-        try:
-            assert background_color == 'rgba(0, 126, 255, 1)'
-        except AssertionError:
-            print("Manta y pañuelos no están seleccionados")
+        assert background_color == 'rgba(0, 126, 255, 1)', "No se pidió manta y pañuelos"
 
     #Validando que se seleccionaron dos helados
     def test_confirm_two_ice_cream(self):
@@ -111,7 +108,7 @@ class TestPageUrban:
         actions.click_on_order_button()
 
         # Encuentra el elemento modal usando el selector previamente definido
-        modal_element = self.driver.find_element(By.CSS_SELECTOR,'.order-header-content')
+        modal_element = self.driver.find_element(By.CSS_SELECTOR,data.css_modal_element)
 
         # Verifica si el elemento modal está presente
         assert modal_element.is_displayed(), "El modal no está presente en la página"
